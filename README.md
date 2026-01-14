@@ -6,3 +6,5 @@
 このリポジトリのタスクはプロジェクトにて管理されています。
 タスクの追加・進行・完了時は、プロジェクトの更新も忘れないようにしてください。<br>
 https://github.com/users/11kazu13/projects/3
+
+url: http://i11kazu13.shop
