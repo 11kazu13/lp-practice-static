@@ -8,3 +8,11 @@
 https://github.com/users/11kazu13/projects/3
 
 url: http://i11kazu13@s325.xrea.com
+
+# リリース手順
+
+プロジェクトディレクトリで以下のコマンドを実行してください
+
+```
+sh deploy.sh
+```
