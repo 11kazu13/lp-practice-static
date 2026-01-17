@@ -1,30 +1,49 @@
-on: push
 name: 🚀 Deploy website on push
+
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   web-deploy:
     name: 🎉 Deploy
     runs-on: ubuntu-latest
+
     steps:
-    - name: 🚚 Get latest code
-      uses: actions/checkout@v2
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v4
 
-    - name: 🔍 Allow IP
-      run: |
-        GLOBAL_IP=$(curl -s inet-ip.info | tr -d '\n')
-        curl -sS -X POST https://api.xrea.com/v1/tool/ssh_ip_allow \
-        -d "account=i11kazu13" \
-        -d "server_name=s325.xrea.com" \
-        -d "api_secret_key=kpGLjnu4gQbBN9DwmjLIG8CUrfKCAai3" \
-        -d "param[addr]=${GLOBAL_IP}"
-        sleep 60
+      - name: 🔍 Allow IP (XREA SSH allow)
+        env:
+          XREA_API_SECRET_KEY: ${{ secrets.XREA_API_SECRET_KEY }}
+        run: |
+          set -eu
 
-    - name: 📂 Sync files
-      env:
-        SSH_KEY: ${{ secrets.SSH_KEY }}
-      run: |
-        mkdir -p ~/.ssh
-        printf "%s" "${SSH_KEY}" > ~/.ssh/id_ed25519
-        chmod 400 ~/.ssh/id_ed25519
-        ssh-keyscan -H s325.xrea.com >> ~/.ssh/known_hosts
-        rsync -av -e "ssh -i ~/.ssh/id_ed25519" ./ i11kazu13@s325.xrea.com:~/lp-practice-static
+          GLOBAL_IP=$(curl -s https://api.ipify.org | tr -d '\n')
+          echo "GLOBAL_IP=${GLOBAL_IP}"
+
+          RES=$(curl -sS -X POST https://api.xrea.com/v1/tool/ssh_ip_allow \
+            -d "account=i11kazu13" \
+            -d "server_name=s325.xrea.com" \
+            -d "api_secret_key=${XREA_API_SECRET_KEY}" \
+            -d "param[addr]=${GLOBAL_IP}")
+
+          echo "API_RES=${RES}"
+
+          # XREA側の反映待ち（まずは長め）
+          sleep 180
+
+      - name: 📂 Sync files (rsync over ssh)
+        env:
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          set -eu
+
+          mkdir -p ~/.ssh
+          printf "%s" "${SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 400 ~/.ssh/id_ed25519
+
+          # known_hostsが原因で止めない（教材ルート優先の簡略化）
+          rsync -av -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
+            ./ i11kazu13@s325.xrea.com:~/lp-practice-static
