@@ -1,5 +1,6 @@
 on: push
 name: 🚀 Deploy website on push
+
 jobs:
   web-deploy:
     name: 🎉 Deploy
@@ -7,12 +8,23 @@ jobs:
     steps:
     - name: 🚚 Get latest code
       uses: actions/checkout@v2
-    
+
+    - name: 🔍 Allow IP
+      run: |
+        GLOBAL_IP=$(curl -s inet-ip.info | tr -d '\n')
+        curl -sS -X POST https://api.xrea.com/v1/tool/ssh_ip_allow \
+        -d "account=i11kazu13" \
+        -d "server_name=s325.xrea.com" \
+        -d "api_secret_key=kpGLjnu4gQbBN9DwmjLIG8CUrfKCAai3" \
+        -d "param[addr]=${GLOBAL_IP}"
+        sleep 60
+
     - name: 📂 Sync files
-      uses: SamKirkland/FTP-Deploy-Action@4.2.0
-      with:
-        server: s325.xrea.com
-        username: i11kazu13
-        password: ${{ secrets.FTP_PASSWORD }}
-        protocol: ftps
-        server-dir: ./lp-practice-static/
+      env:
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+      run: |
+        mkdir -p ~/.ssh
+        printf "%s" "${SSH_KEY}" > ~/.ssh/id_ed25519
+        chmod 400 ~/.ssh/id_ed25519
+        ssh-keyscan -H s325.xrea.com >> ~/.ssh/known_hosts
+        rsync -av -e "ssh -i ~/.ssh/id_ed25519" ./ i11kazu13@s325.xrea.com:~/lp-practice-static
